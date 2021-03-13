@@ -1,26 +1,30 @@
 import pdfkit
 import json
 import base64
+import pandas as pd
+import multiprocessing as mp
 
 header = """
     <html>
       <style>
         .external {
           display: table;
-          height: 100%;
-          width: 100%;
+          height: 1426px;
+          width: 8.5in;
         }
         .response {
           margin-left: auto;
           margin-right: auto;
-          border: 1px solid black;
+          border: 3px solid black;
           width: 400px;
           height: 400px;
           font-size: 2em;
         }
+        .q-name {
+          margin-bottom: 40px;
+        }
         .q-img {
           max-width: 100%;
-          margin-top: 40px;
         }
       </style>
 """
@@ -29,9 +33,18 @@ footer = """
     </html>
 """
 
+noimg_template = """
+    <div class="external">
+      <h3 class="q-name">{title}</h3>
+      <div class="response">
+        {q_resp}
+      </div>
+    </div>
+"""
+
 template = """
     <div class="external">
-      <h3>{title}</h3>
+      <h3 class="q-name">{title}</h3>
       <div>
           <img class="q-img" src="data:image/jpg;base64,{imgb64}"/>
       </div>
@@ -60,22 +73,23 @@ def get_question_data(outline):
     return question_data
 
 
-def html_from_submission(submission, qdata):
+def html_for_sid(sid, responses, qdata):
     res = [header]
     res.append(
-        template.format(title="Student ID",
+        noimg_template.format(title="Student ID",
                         imgb64="",
-                        q_resp=submission["sid"])
+                        q_resp=sid)
     )
 
     #Order correctly
-    for qid in sorted(submission["qs"].keys()):
-        q = submission["qs"][qid]
+    for qid in sorted(qdata.keys()):
         qinfo = qdata[qid]
+        # Make sure question included in response
+        q_resp = responses[qid] if qid in responses else ""
         res.append(
             template.format(title=qinfo["name"],
                             imgb64=qinfo["imgb64"],
-                            q_resp=q["q_resp"])
+                            q_resp=q_resp)
         )
 
     res.append(footer)
@@ -85,29 +99,42 @@ def html_from_submission(submission, qdata):
 def pdf_from_html(sid, html):
     opts = {
         'page-size': 'Letter',
-        'margin-top': '0.75in',
-        'margin-right': '0.75in',
-        'margin-bottom': '0.75in',
-        'margin-left': '0.75in',
+        'margin-top': '0.0in',
+        'margin-right': '0.0in',
+        'margin-bottom': '0.0in',
+        'margin-left': '0.0in',
         'encoding': "UTF-8"
     }
     pdfkit.from_string(html, "output/" + str(sid) + ".pdf")
 
 
+def submissions_dict(submissions_df):
+    submissions = {}
+    for sid, responses in submissions_df.groupby("SID"):
+        resp_dict = {}
+        for _, row in responses.iterrows():
+            qid = row["qid"]
+            resp_dict[qid] = row["ans_text"]
+        submissions[sid] = resp_dict
+
+    return submissions
+
+
+submissions_df = pd.read_csv("student_submissions.csv", dtype=str)
+subs_dict = submissions_dict(submissions_df)
 
 
 outline = get_outline()
 question_data = get_question_data(outline)
 
-student_submission = {
-        "sid": 0,
-        "qs": {"Q2.1": {"q_resp": "False"}}
-}
+def pdf_from_sid(sid):
+    sub_html = html_for_sid(sid, subs_dict[sid], question_data)
+    pdf_from_html(sid, sub_html)
 
+pool = mp.Pool(mp.cpu_count())
+pool.map(pdf_from_sid, list(subs_dict.keys()))
 
-sub_html = html_from_submission(student_submission, question_data)
-pdf_from_html(student_submission["sid"], sub_html)
-
+pool.close()
 
 
 

@@ -3,3 +3,8 @@ output/
 question_imgs/
 *.pdf
 *.html
+.~lock*
+.ipynb_checkpoints/
+*.ipynb
+*csv
+
