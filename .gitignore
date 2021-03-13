@@ -1,0 +1,5 @@
+venv/
+output/
+question_imgs/
+*.pdf
+*.html
