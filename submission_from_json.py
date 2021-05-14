@@ -19,6 +19,7 @@ header = """
           width: 400px;
           height: 400px;
           font-size: 2em;
+          overflow-wrap: break-word;
         }
         .q-name {
           margin-bottom: 40px;
