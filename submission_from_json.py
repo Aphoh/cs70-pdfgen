@@ -3,6 +3,7 @@ import json
 import base64
 import pandas as pd
 import multiprocessing as mp
+import os
 
 header = """
     <html>
@@ -123,6 +124,9 @@ def submissions_dict(submissions_df):
 
 submissions_df = pd.read_csv("student_submissions.csv", dtype=str)
 subs_dict = submissions_dict(submissions_df)
+
+if not os.path.exists("output/"):
+    os.makedirs("output/")
 
 
 outline = get_outline()
