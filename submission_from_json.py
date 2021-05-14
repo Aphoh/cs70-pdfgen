@@ -41,7 +41,10 @@ noimg_template = """
     <div class="external">
       <h3 class="q-name">{title}</h3>
       <div class="response">
-        {q_resp}
+        {q_resp1}
+      </div>
+      <div class="response">
+        {q_resp2}
       </div>
     </div>
 """
@@ -80,9 +83,10 @@ def get_question_data(outline):
 def html_for_sid(sid, responses, qdata):
     res = [header]
     res.append(
-        noimg_template.format(title="Student ID",
+        noimg_template.format(title="Student ID/Name",
                         imgb64="",
-                        q_resp=sid)
+                        q_resp1=sid,
+                        q_resp2=responses["_name"])
     )
 
     #Order correctly
@@ -120,6 +124,8 @@ def submissions_dict(submissions_df):
             qid = row["qid"]
             resp_dict[qid] = row["ans_text"]
         submissions[sid] = resp_dict
+
+        submissions[sid]["_name"] = responses.iloc[0]["Name"]
 
     return submissions
 
