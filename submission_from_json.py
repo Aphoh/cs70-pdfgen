@@ -16,10 +16,12 @@ header = """
         .response {
           margin-left: auto;
           margin-right: auto;
-          border: 3px solid black;
+          margin-top: 5px;
+          border: 1px solid rgba(255, 0, 0, .5);
           width: 400px;
-          height: 400px;
-          font-size: 2em;
+          min-height: 400px;
+          height: auto;
+          font-size: 2.5em;
           overflow-wrap: break-word;
         }
         .q-name {
