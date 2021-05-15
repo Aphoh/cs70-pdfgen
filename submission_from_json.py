@@ -20,8 +20,9 @@ header = """
           border: 1px solid rgba(255, 0, 0, .5);
           width: 400px;
           min-height: 400px;
+          max-height: 800px;
           height: auto;
-          font-size: 2.5em;
+          font-size: 1.8em;
           overflow-wrap: break-word;
         }
         .q-name {
@@ -90,7 +91,7 @@ def html_for_sid(sid, responses, qdata):
     )
 
     #Order correctly
-    for qid in sorted(qdata.keys()):
+    for qid in sorted(qdata.keys(), key=lambda x: int(x[1:])):
         qinfo = qdata[qid]
         # Make sure question included in response
         q_resp = responses[qid] if qid in responses else ""
@@ -104,7 +105,7 @@ def html_for_sid(sid, responses, qdata):
 
     return ''.join(res)
 
-def pdf_from_html(sid, html):
+def pdf_from_html(sid, html, fname=None):
     opts = {
         'page-size': 'Letter',
         'margin-top': '0.0in',
@@ -113,7 +114,7 @@ def pdf_from_html(sid, html):
         'margin-left': '0.0in',
         'encoding': "UTF-8"
     }
-    pdfkit.from_string(html, "output/" + str(sid) + ".pdf")
+    pdfkit.from_string(html, "output/" + str(sid) + ".pdf" if fname is None else fname)
 
 
 def submissions_dict(submissions_df):
@@ -133,9 +134,9 @@ def submissions_dict(submissions_df):
 submissions_df = pd.read_csv("student_submissions.csv", dtype=str)
 subs_dict = submissions_dict(submissions_df)
 
+
 if not os.path.exists("output/"):
     os.makedirs("output/")
-
 
 outline = get_outline()
 question_data = get_question_data(outline)
@@ -143,6 +144,17 @@ question_data = get_question_data(outline)
 def pdf_from_sid(sid):
     sub_html = html_for_sid(sid, subs_dict[sid], question_data)
     pdf_from_html(sid, sub_html)
+
+blank_sample = next(iter(subs_dict.values())).copy()
+for k in blank_sample:
+    blank_sample[k] = ""
+
+print(blank_sample)
+
+subs_dict[""] = blank_sample
+
+blank_html = html_for_sid("", subs_dict[""], question_data)
+pdf_from_html("", blank_html, fname="output/blank.pdf")
 
 pool = mp.Pool(mp.cpu_count())
 pool.map(pdf_from_sid, list(subs_dict.keys()))
